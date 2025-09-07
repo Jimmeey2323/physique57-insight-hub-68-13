@@ -36,7 +36,6 @@ interface ClassPerformanceRankingTableProps {
   data: SessionData[];
 }
 
-// Local storage hook
 const useLocalStorage = (key: string, initialValue: string) => {
   const [storedValue, setStoredValue] = useState<string>(() => {
     try {
@@ -69,15 +68,14 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
   
   const [summaryWithEmpty, setSummaryWithEmpty] = useLocalStorage(
     'class-performance-summary-with-empty',
-    '• Classes are ranked by average check-ins including empty sessions\\n• Higher fill percentages indicate better class popularity\\n• Revenue metrics show financial performance per class'
+    '• Classes are ranked by average check-ins including empty sessions\n• Higher fill percentages indicate better class popularity\n• Revenue metrics show financial performance per class'
   );
   
   const [summaryWithoutEmpty, setSummaryWithoutEmpty] = useLocalStorage(
     'class-performance-summary-without-empty',
-    '• Classes are ranked by average check-ins excluding empty sessions\\n• This view shows true performance when classes actually run\\n• Better indicator of class engagement when sessions occur'
+    '• Classes are ranked by average check-ins excluding empty sessions\n• This view shows true performance when classes actually run\n• Better indicator of class engagement when sessions occur'
   );
 
-  // Process and group data by unique ID
   const classPerformanceData = useMemo(() => {
     if (!data || data.length === 0) return [];
 
@@ -133,13 +131,11 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
       };
     });
 
-    // Rank by average check-ins (with empty)
     const sortedWithEmpty = [...performanceData].sort((a, b) => b.avgCheckIns - a.avgCheckIns);
     sortedWithEmpty.forEach((item, index) => {
       item.rank = index + 1;
     });
 
-    // Rank by average check-ins (without empty)
     const sortedWithoutEmpty = [...performanceData].sort((a, b) => b.avgCheckInsWithoutEmpty - a.avgCheckInsWithoutEmpty);
     sortedWithoutEmpty.forEach((item, index) => {
       const originalItem = performanceData.find(p => p.uniqueId === item.uniqueId);
@@ -165,6 +161,109 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
 
   const handleSaveSummary = (type: 'withEmpty' | 'withoutEmpty') => {
     setEditingSummary(prev => ({ ...prev, [type]: false }));
+  };
+
+  const renderTableRows = (sortedData: ClassPerformanceData[], withEmpty: boolean) => {
+    const rows: JSX.Element[] = [];
+    
+    sortedData.forEach((classData) => {
+      rows.push(
+        <TableRow key={classData.uniqueId} className="hover:bg-gray-50">
+          <TableCell className="text-center">
+            <div className="flex items-center justify-center gap-1">
+              {(withEmpty ? classData.rank : classData.rankWithoutEmpty) <= 3 && (
+                <Trophy className={`w-4 h-4 ${(withEmpty ? classData.rank : classData.rankWithoutEmpty) === 1 ? 'text-yellow-500' : (withEmpty ? classData.rank : classData.rankWithoutEmpty) === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
+              )}
+              <span className="font-bold">{withEmpty ? classData.rank : classData.rankWithoutEmpty}</span>
+            </div>
+          </TableCell>
+          <TableCell>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleRowExpansion(classData.uniqueId)}
+                className="p-1 h-6 w-6"
+              >
+                {expandedRows.has(classData.uniqueId) ? 
+                  <ChevronUp className="w-3 h-3" /> : 
+                  <ChevronDown className="w-3 h-3" />
+                }
+              </Button>
+              <span className="font-medium">{classData.className}</span>
+            </div>
+          </TableCell>
+          <TableCell className="text-center">
+            <Badge variant="outline">{withEmpty ? classData.sessionCount : classData.sessionsWithCheckIns}</Badge>
+          </TableCell>
+          <TableCell className="text-center font-semibold">
+            {(withEmpty ? classData.avgCheckIns : classData.avgCheckInsWithoutEmpty).toFixed(1)}
+          </TableCell>
+          <TableCell className="text-center">
+            <Badge variant={(withEmpty ? classData.fillPercentage : classData.fillPercentageWithoutEmpty) >= 80 ? 'default' : (withEmpty ? classData.fillPercentage : classData.fillPercentageWithoutEmpty) >= 60 ? 'secondary' : 'destructive'}>
+              {(withEmpty ? classData.fillPercentage : classData.fillPercentageWithoutEmpty).toFixed(1)}%
+            </Badge>
+          </TableCell>
+          <TableCell className="text-right font-semibold">
+            ₹{classData.totalRevenue.toLocaleString()}
+          </TableCell>
+        </TableRow>
+      );
+      
+      if (expandedRows.has(classData.uniqueId)) {
+        rows.push(
+          <TableRow key={`drill-${classData.uniqueId}`}>
+            <TableCell colSpan={6}>
+              <Collapsible open>
+                <CollapsibleContent>
+                  <Card className="ml-4 mt-2">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">
+                        Individual Sessions - {classData.className}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-auto max-h-64">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-gray-100">
+                              <TableHead>Date</TableHead>
+                              <TableHead>Day</TableHead>
+                              <TableHead>Time</TableHead>
+                              <TableHead>Trainer</TableHead>
+                              <TableHead>Check-ins</TableHead>
+                              <TableHead>Capacity</TableHead>
+                              <TableHead>Revenue</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(withEmpty ? classData.individualSessions : classData.individualSessions.filter(s => s.checkedInCount > 0)).map((session, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell>{new Date(session.date).toLocaleDateString()}</TableCell>
+                                <TableCell>{session.dayOfWeek}</TableCell>
+                                <TableCell>{session.time}</TableCell>
+                                <TableCell>{session.trainerName}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{session.checkedInCount}</Badge>
+                                </TableCell>
+                                <TableCell>{session.capacity}</TableCell>
+                                <TableCell>₹{(session.revenue || session.totalPaid || 0).toLocaleString()}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CollapsibleContent>
+              </Collapsible>
+            </TableCell>
+          </TableRow>
+        );
+      }
+    });
+    
+    return rows;
   };
 
   const SummarySection = ({ 
@@ -252,7 +351,6 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
 
   return (
     <div className="space-y-6">
-      {/* Table with Empty Sessions */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -274,100 +372,7 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classPerformanceData.sort((a, b) => a.rank - b.rank).map((classData) => (
-                  <React.Fragment key={classData.uniqueId}>
-                    <TableRow className="hover:bg-gray-50">
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {classData.rank <= 3 && (
-                            <Trophy className={`w-4 h-4 ${classData.rank === 1 ? 'text-yellow-500' : classData.rank === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
-                          )}
-                          <span className="font-bold">{classData.rank}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleRowExpansion(classData.uniqueId)}
-                            className="p-1 h-6 w-6"
-                          >
-                            {expandedRows.has(classData.uniqueId) ? 
-                              <ChevronUp className="w-3 h-3" /> : 
-                              <ChevronDown className="w-3 h-3" />
-                            }
-                          </Button>
-                          <span className="font-medium">{classData.className}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">{classData.sessionCount}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center font-semibold">
-                        {classData.avgCheckIns.toFixed(1)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={classData.fillPercentage >= 80 ? 'default' : classData.fillPercentage >= 60 ? 'secondary' : 'destructive'}>
-                          {classData.fillPercentage.toFixed(1)}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        ₹{classData.totalRevenue.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                    
-                    {expandedRows.has(classData.uniqueId) && (
-                      <TableRow>
-                        <TableCell colSpan={6}>
-                          <Collapsible open>
-                            <CollapsibleContent>
-                              <Card className="ml-4 mt-2">
-                                <CardHeader className="pb-2">
-                                  <CardTitle className="text-sm">
-                                    Individual Sessions - {classData.className}
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="overflow-auto max-h-64">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow className="bg-gray-100">
-                                          <TableHead>Date</TableHead>
-                                          <TableHead>Day</TableHead>
-                                          <TableHead>Time</TableHead>
-                                          <TableHead>Trainer</TableHead>
-                                          <TableHead>Check-ins</TableHead>
-                                          <TableHead>Capacity</TableHead>
-                                          <TableHead>Revenue</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {classData.individualSessions.map((session, idx) => (
-                                          <TableRow key={idx}>
-                                            <TableCell>{new Date(session.date).toLocaleDateString()}</TableCell>
-                                            <TableCell>{session.dayOfWeek}</TableCell>
-                                            <TableCell>{session.time}</TableCell>
-                                            <TableCell>{session.trainerName}</TableCell>
-                                            <TableCell>
-                                              <Badge variant="outline">{session.checkedInCount}</Badge>
-                                            </TableCell>
-                                            <TableCell>{session.capacity}</TableCell>
-                                            <TableCell>₹{(session.revenue || session.totalPaid || 0).toLocaleString()}</TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                ))}
+                {renderTableRows(classPerformanceData.sort((a, b) => a.rank - b.rank), true)}
               </TableBody>
             </Table>
           </div>
@@ -382,7 +387,6 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
         </CardContent>
       </Card>
 
-      {/* Table without Empty Sessions */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -404,50 +408,7 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classPerformanceData.sort((a, b) => a.rankWithoutEmpty - b.rankWithoutEmpty).map((classData) => (
-                  <React.Fragment key={`no-empty-${classData.uniqueId}`}>
-                    <TableRow className="hover:bg-gray-50">
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {classData.rankWithoutEmpty <= 3 && (
-                            <Trophy className={`w-4 h-4 ${classData.rankWithoutEmpty === 1 ? 'text-yellow-500' : classData.rankWithoutEmpty === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
-                          )}
-                          <span className="font-bold">{classData.rankWithoutEmpty}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleRowExpansion(classData.uniqueId)}
-                            className="p-1 h-6 w-6"
-                          >
-                            {expandedRows.has(classData.uniqueId) ? 
-                              <ChevronUp className="w-3 h-3" /> : 
-                              <ChevronDown className="w-3 h-3" />
-                            }
-                          </Button>
-                          <span className="font-medium">{classData.className}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">{classData.sessionsWithCheckIns}</Badge>
-                      </TableCell>
-                      <TableCell className="text-center font-semibold">
-                        {classData.avgCheckInsWithoutEmpty.toFixed(1)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={classData.fillPercentageWithoutEmpty >= 80 ? 'default' : classData.fillPercentageWithoutEmpty >= 60 ? 'secondary' : 'destructive'}>
-                          {classData.fillPercentageWithoutEmpty.toFixed(1)}%
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        ₹{classData.totalRevenue.toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  </React.Fragment>
-                ))}
+                {renderTableRows(classPerformanceData.sort((a, b) => a.rankWithoutEmpty - b.rankWithoutEmpty), false)}
               </TableBody>
             </Table>
           </div>
