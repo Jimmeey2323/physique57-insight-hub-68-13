@@ -15,13 +15,13 @@ export const ClassAttendanceMetricCards: React.FC<ClassAttendanceMetricCardsProp
     const totalSessions = data.length;
     const totalAttendance = data.reduce((sum, session) => sum + (session.checkedInCount || 0), 0);
     const totalCapacity = data.reduce((sum, session) => sum + (session.capacity || 0), 0);
-    const totalRevenue = data.reduce((sum, session) => sum + (session.totalPaid || 0), 0);
+    const totalRevenue = data.reduce((sum, session) => sum + (session.revenue || session.totalPaid || 0), 0);
     const uniqueClasses = [...new Set(data.map(session => session.cleanedClass || session.classType).filter(Boolean))].length;
     const uniqueTrainers = [...new Set(data.map(session => session.trainerName).filter(Boolean))].length;
     
-    const avgAttendance = totalSessions > 0 ? Math.round(totalAttendance / totalSessions) : 0;
-    const fillRate = totalCapacity > 0 ? Math.round((totalAttendance / totalCapacity) * 100) : 0;
-    const avgRevenue = totalSessions > 0 ? Math.round(totalRevenue / totalSessions) : 0;
+    const avgAttendance = totalSessions > 0 ? (totalAttendance / totalSessions) : 0;
+    const fillRate = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
+    const avgRevenue = totalSessions > 0 ? (totalRevenue / totalSessions) : 0;
 
     // Find best performing class by average attendance
     const classPerformance = data.reduce((acc, session) => {
@@ -37,7 +37,7 @@ export const ClassAttendanceMetricCards: React.FC<ClassAttendanceMetricCardsProp
     const bestClass = Object.entries(classPerformance)
       .map(([name, stats]) => ({
         name,
-        avgAttendance: Math.round(stats.totalAttendance / stats.sessionCount)
+        avgAttendance: stats.totalAttendance / stats.sessionCount
       }))
       .sort((a, b) => b.avgAttendance - a.avgAttendance)[0];
 
@@ -74,7 +74,7 @@ export const ClassAttendanceMetricCards: React.FC<ClassAttendanceMetricCardsProp
     },
     {
       title: 'Average Attendance',
-      value: metrics.avgAttendance.toString(),
+      value: metrics.avgAttendance.toFixed(1),
       icon: Target,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
@@ -82,7 +82,7 @@ export const ClassAttendanceMetricCards: React.FC<ClassAttendanceMetricCardsProp
     },
     {
       title: 'Fill Rate',
-      value: `${metrics.fillRate}%`,
+      value: `${metrics.fillRate.toFixed(1)}%`,
       icon: TrendingUp,
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
@@ -102,7 +102,7 @@ export const ClassAttendanceMetricCards: React.FC<ClassAttendanceMetricCardsProp
       icon: Clock,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
-      description: `Avg: ${metrics.bestClass?.avgAttendance || 0} attendees`
+      description: `Avg: ${metrics.bestClass?.avgAttendance?.toFixed(1) || '0.0'} attendees`
     }
   ];
 

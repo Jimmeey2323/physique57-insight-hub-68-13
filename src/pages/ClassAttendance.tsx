@@ -1,9 +1,6 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ClassAttendanceSection } from '@/components/dashboard/ClassAttendanceSection';
-import { ProfessionalLoader } from '@/components/dashboard/ProfessionalLoader';
-import { useSessionsData } from '@/hooks/useSessionsData';
-import { useGlobalLoading } from '@/hooks/useGlobalLoading';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Home, Calendar } from 'lucide-react';
@@ -11,17 +8,7 @@ import { Footer } from '@/components/ui/footer';
 import { SessionsFiltersProvider } from '@/contexts/SessionsFiltersContext';
 
 const ClassAttendance = () => {
-  const { loading } = useSessionsData();
-  const { isLoading, setLoading } = useGlobalLoading();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    setLoading(loading, 'Processing class attendance analytics and trends...');
-  }, [loading, setLoading]);
-
-  if (isLoading) {
-    return <ProfessionalLoader variant="analytics" subtitle="Processing class attendance analytics and trends..." />;
-  }
 
   return (
     <SessionsFiltersProvider>
