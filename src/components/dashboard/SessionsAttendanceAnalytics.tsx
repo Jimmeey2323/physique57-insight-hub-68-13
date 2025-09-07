@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
 import { TrendingUp, Calendar, Users, Target } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
+import { parseSafeSessionDate } from '@/utils/dateUtils';
 
 interface SessionsAttendanceAnalyticsProps {
   data: SessionData[];
@@ -15,8 +16,8 @@ export const SessionsAttendanceAnalytics: React.FC<SessionsAttendanceAnalyticsPr
 
     // Group data by date and calculate daily metrics
     const dailyStats = data.reduce((acc, session) => {
-      const sessionDate = new Date(session.date);
-      if (isNaN(sessionDate.getTime())) return acc; // Skip invalid dates
+      const sessionDate = parseSafeSessionDate(session.date);
+      if (!sessionDate) return acc; // Skip invalid dates
       
       const date = sessionDate.toLocaleDateString();
       
@@ -51,8 +52,8 @@ export const SessionsAttendanceAnalytics: React.FC<SessionsAttendanceAnalyticsPr
     if (!data || data.length === 0) return [];
 
     const weeklyStats = data.reduce((acc, session) => {
-      const sessionDate = new Date(session.date);
-      if (isNaN(sessionDate.getTime())) return acc; // Skip invalid dates
+      const sessionDate = parseSafeSessionDate(session.date);
+      if (!sessionDate) return acc; // Skip invalid dates
       
       const weekStart = new Date(sessionDate);
       weekStart.setDate(sessionDate.getDate() - sessionDate.getDay());

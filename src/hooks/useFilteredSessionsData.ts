@@ -2,6 +2,7 @@
 import { useMemo, useContext } from 'react';
 import { SessionData } from '@/hooks/useSessionsData';
 import { useSessionsFilters } from '@/contexts/SessionsFiltersContext';
+import { parseSafeSessionDate } from '@/utils/dateUtils';
 
 export const useFilteredSessionsData = (data: SessionData[]) => {
   // Try to get filters context, but don't throw if it doesn't exist
@@ -54,7 +55,12 @@ export const useFilteredSessionsData = (data: SessionData[]) => {
 
       // Date range filter
       if (filters.dateRange.start || filters.dateRange.end) {
-        const sessionDate = new Date(session.date);
+        const sessionDate = parseSafeSessionDate(session.date);
+        
+        // Skip sessions with invalid dates
+        if (!sessionDate) {
+          return false;
+        }
         
         if (filters.dateRange.start && sessionDate < filters.dateRange.start) {
           return false;
