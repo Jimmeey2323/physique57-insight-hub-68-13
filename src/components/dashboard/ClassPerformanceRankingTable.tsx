@@ -1,15 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trophy, BarChart3 } from 'lucide-react';
+import { Trophy, BarChart3, Eye, Calendar, Clock, User } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface ClassPerformanceRankingTableProps {
   data: SessionData[];
 }
 
+interface GroupedClassData {
+  uniqueId: string;
+  className: string;
+  trainerName: string;
+  dayOfWeek: string;
+  time: string;
+  location: string;
+  sessions: SessionData[];
+  avgCheckIns: number;
+  fillPercentage: number;
+  totalRevenue: number;
+  totalCheckIns: number;
+  totalCapacity: number;
+  sessionCount: number;
+}
+
 export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTableProps> = ({ data }) => {
+  const [selectedClass, setSelectedClass] = useState<GroupedClassData | null>(null);
+
   if (!data || data.length === 0) {
     return (
       <Card>
@@ -20,31 +40,39 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
     );
   }
 
-  // Group sessions by class
+  // Group sessions by UniqueID1 (column 17 in the sheet)
   const classGroups = data.reduce((acc, session) => {
-    const className = session.cleanedClass || session.classType || 'Unknown Class';
-    if (!acc[className]) {
-      acc[className] = [];
+    const uniqueId = session.uniqueId || 'unknown';
+    if (!acc[uniqueId]) {
+      acc[uniqueId] = [];
     }
-    acc[className].push(session);
+    acc[uniqueId].push(session);
     return acc;
   }, {} as Record<string, SessionData[]>);
 
-  // Calculate performance metrics
-  const classPerformance = Object.entries(classGroups).map(([className, sessions]) => {
+  // Calculate performance metrics for each unique class
+  const classPerformance: GroupedClassData[] = Object.entries(classGroups).map(([uniqueId, sessions]) => {
+    const firstSession = sessions[0];
     const totalCheckIns = sessions.reduce((sum, s) => sum + s.checkedInCount, 0);
     const totalRevenue = sessions.reduce((sum, s) => sum + (s.revenue || s.totalPaid || 0), 0);
-    const avgCheckIns = totalCheckIns / sessions.length;
     const totalCapacity = sessions.reduce((sum, s) => sum + s.capacity, 0);
+    const avgCheckIns = totalCheckIns / sessions.length;
     const fillPercentage = totalCapacity > 0 ? (totalCheckIns / totalCapacity) * 100 : 0;
 
     return {
-      className,
+      uniqueId,
+      className: firstSession.cleanedClass || firstSession.classType || 'Unknown Class',
+      trainerName: firstSession.trainerName || `${firstSession.trainerFirstName} ${firstSession.trainerLastName}`.trim(),
+      dayOfWeek: firstSession.dayOfWeek,
+      time: firstSession.time,
+      location: firstSession.location,
+      sessions,
       sessionCount: sessions.length,
       avgCheckIns,
       fillPercentage,
       totalRevenue,
-      totalCheckIns
+      totalCheckIns,
+      totalCapacity
     };
   });
 
@@ -57,7 +85,7 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="w-5 h-5" />
-            Class Performance Rankings
+            Class Performance Rankings (Grouped by UniqueID1)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -67,15 +95,20 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
                 <TableRow className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                   <TableHead className="text-white font-bold">Rank</TableHead>
                   <TableHead className="text-white font-bold">Class Name</TableHead>
+                  <TableHead className="text-white font-bold">Trainer</TableHead>
+                  <TableHead className="text-white font-bold">Day</TableHead>
+                  <TableHead className="text-white font-bold">Time</TableHead>
+                  <TableHead className="text-white font-bold">Location</TableHead>
                   <TableHead className="text-white font-bold">Sessions</TableHead>
                   <TableHead className="text-white font-bold">Avg Check-ins</TableHead>
                   <TableHead className="text-white font-bold">Fill %</TableHead>
                   <TableHead className="text-white font-bold">Revenue</TableHead>
+                  <TableHead className="text-white font-bold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedPerformance.map((classData, index) => (
-                  <TableRow key={classData.className} className="hover:bg-gray-50">
+                  <TableRow key={classData.uniqueId} className="hover:bg-gray-50">
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
                         {index < 3 && (
@@ -86,6 +119,27 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
                     </TableCell>
                     <TableCell>
                       <span className="font-medium">{classData.className}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <User className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">{classData.trainerName}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">{classData.dayOfWeek}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm">{classData.time}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {classData.location}
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline">{classData.sessionCount}</Badge>
@@ -100,6 +154,69 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
                     </TableCell>
                     <TableCell className="text-right font-semibold">
                       ₹{classData.totalRevenue.toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setSelectedClass(classData)}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            Details
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>
+                              Class Details: {classData.className} - {classData.trainerName}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                              <div><strong>Day:</strong> {classData.dayOfWeek}</div>
+                              <div><strong>Time:</strong> {classData.time}</div>
+                              <div><strong>Location:</strong> {classData.location}</div>
+                              <div><strong>Unique ID:</strong> {classData.uniqueId}</div>
+                            </div>
+                            <div className="overflow-auto border rounded-lg">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Session Name</TableHead>
+                                    <TableHead>Capacity</TableHead>
+                                    <TableHead>Checked In</TableHead>
+                                    <TableHead>Booked</TableHead>
+                                    <TableHead>Late Cancelled</TableHead>
+                                    <TableHead>Revenue</TableHead>
+                                    <TableHead>Fill %</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {classData.sessions.map((session, idx) => (
+                                    <TableRow key={idx}>
+                                      <TableCell>{session.date}</TableCell>
+                                      <TableCell>{session.sessionName}</TableCell>
+                                      <TableCell>{session.capacity}</TableCell>
+                                      <TableCell>{session.checkedInCount}</TableCell>
+                                      <TableCell>{session.bookedCount}</TableCell>
+                                      <TableCell>{session.lateCancelledCount}</TableCell>
+                                      <TableCell>₹{(session.revenue || session.totalPaid || 0).toLocaleString()}</TableCell>
+                                      <TableCell>
+                                        <Badge variant={session.fillPercentage && session.fillPercentage >= 80 ? 'default' : 'secondary'}>
+                                          {session.fillPercentage?.toFixed(1) || '0.0'}%
+                                        </Badge>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -117,10 +234,10 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
             <CardContent>
               <div className="prose prose-sm max-w-none">
                 <div className="whitespace-pre-line text-sm text-muted-foreground">
-                  • Classes ranked by average check-ins across all sessions{'\n'}
-                  • Higher fill percentages indicate better class popularity{'\n'}
-                  • Revenue metrics show total financial performance per class{'\n'}
-                  • Top 3 performing classes highlighted with trophy icons
+                  • Classes grouped by UniqueID1 and ranked by average check-ins{'\n'}
+                  • Each row represents a unique class schedule (trainer + day + time){'\n'}
+                  • Click "Details" to view individual session data for each class{'\n'}
+                  • Fill percentages and revenue show performance across all sessions
                 </div>
               </div>
             </CardContent>

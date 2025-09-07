@@ -84,39 +84,38 @@ export const ClassAttendanceSection: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-slate-600">Loading class attendance data...</p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
+      <Card>
+        <CardContent className="p-8 text-center">
           <p className="text-red-600 mb-4">Error loading data: {error}</p>
           <Button onClick={refetch} variant="outline">Retry</Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!sessionsData || sessionsData.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
+      <Card>
+        <CardContent className="p-8 text-center">
           <p className="text-slate-600">No class attendance data available</p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <div className="container mx-auto px-6 py-8">
+    <div className="space-y-8">
         {/* Filter Section */}
         <ClassAttendanceFilterSection data={sessionsData || []} />
 
@@ -173,7 +172,6 @@ export const ClassAttendanceSection: React.FC = () => {
             </TabsContent>
           ))}
         </Tabs>
-      </div>
     </div>
   );
 };
