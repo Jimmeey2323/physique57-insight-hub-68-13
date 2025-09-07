@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronUp, BarChart3, Users, Target, Filter, MapPin, Building2, Home } from 'lucide-react';
-import { useSessionsData, SessionData } from '@/hooks/useSessionsData';
+import { useSessionsData, SessionData } from '@/hooks/useSessionsDataDemo';
 import { useFilteredSessionsData } from '@/hooks/useFilteredSessionsData';
 import { ClassAttendanceFilterSection } from './ClassAttendanceFilterSection';
 import { ClassAttendanceMetricCards } from './ClassAttendanceMetricCards';

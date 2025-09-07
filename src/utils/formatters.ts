@@ -20,8 +20,9 @@ export const formatCurrency = (value: number | undefined | null): string => {
   return `₹${value.toLocaleString('en-IN')}`;
 };
 
-export const formatPercentage = (value: number): string => {
-  return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+export const formatPercentage = (value: number | undefined | null): string => {
+  if (value === undefined || value === null || isNaN(value)) return '0.0%';
+  return `${value.toFixed(1)}%`;
 };
 
 export const formatNumber = (value: number | undefined | null): string => {
