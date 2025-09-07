@@ -15,6 +15,7 @@ import { ClassAttendanceMonthOnMonthTable } from './ClassAttendanceMonthOnMonthT
 import { ClassAttendanceUtilizationTable } from './ClassAttendanceUtilizationTable';
 import { ClassAttendanceRevenueTable } from './ClassAttendanceRevenueTable';
 import { ClassAttendanceEfficiencyTable } from './ClassAttendanceEfficiencyTable';
+import { ClassPerformanceRankingTable } from './ClassPerformanceRankingTable';
 import { useNavigate } from 'react-router-dom';
 
 const locations = [{
@@ -151,6 +152,9 @@ export const ClassAttendanceSection: React.FC = () => {
 
               {/* Performance Tables Grid */}
               <div className="grid grid-cols-1 gap-8">
+                {/* Class Performance Ranking Table */}
+                <ClassPerformanceRankingTable data={locationFilteredData} />
+
                 {/* Class Format Performance Table */}
                 <ClassAttendancePerformanceTable data={locationFilteredData} />
 
