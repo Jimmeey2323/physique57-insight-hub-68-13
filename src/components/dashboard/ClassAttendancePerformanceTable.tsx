@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BarChart3, TrendingUp, Target, Users, Calendar, DollarSign, Activity, Zap } from 'lucide-react';
+import { BarChart3, TrendingUp, Target, Users, Calendar, DollarSign, Activity, Zap, ChevronRight } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
 import { formatNumber, formatCurrency, formatPercentage } from '@/utils/formatters';
+import { ClassAttendanceDrillDownModal } from './ClassAttendanceDrillDownModal';
 
 interface ClassAttendancePerformanceTableProps {
   data: SessionData[];
@@ -13,6 +14,11 @@ interface ClassAttendancePerformanceTableProps {
 
 export const ClassAttendancePerformanceTable: React.FC<ClassAttendancePerformanceTableProps> = ({ data }) => {
   const [selectedMetric, setSelectedMetric] = useState('fillRate');
+  const [drillDownModal, setDrillDownModal] = useState<{
+    isOpen: boolean;
+    classFormat: string;
+    stats: any;
+  }>({ isOpen: false, classFormat: '', stats: null });
 
   const performanceData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -100,32 +106,60 @@ export const ClassAttendancePerformanceTable: React.FC<ClassAttendancePerformanc
     }
   };
 
+  const handleDrillDown = (classFormat: string, stats: any) => {
+    setDrillDownModal({
+      isOpen: true,
+      classFormat,
+      stats: {
+        totalSessions: stats.totalSessions,
+        totalCapacity: stats.totalCapacity,
+        totalCheckedIn: stats.totalCheckedIn,
+        totalRevenue: stats.totalRevenue,
+        fillRate: stats.fillRate,
+        showUpRate: stats.showUpRate,
+        avgRevenue: stats.avgRevenue,
+        emptySessions: stats.emptySessions,
+      }
+    });
+  };
+
   return (
-    <Card className="bg-white shadow-lg border-0">
-      <CardHeader className="border-b border-gray-100">
+    <Card className="bg-white shadow-xl border-0 rounded-2xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white border-b-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-blue-600" />
-            Class Format Performance Analysis
-            <Badge variant="outline" className="text-blue-600">
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+              <BarChart3 className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="font-bold">Class Format Performance</div>
+              <div className="text-sm text-white/80 font-normal">
+                Comprehensive analysis across all class formats
+              </div>
+            </div>
+            <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm border-white/30">
               {performanceData.length} formats
             </Badge>
           </CardTitle>
         </div>
         
         {/* Metric Selector */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex flex-wrap gap-2 mt-6">
           {metrics.map((metric) => {
             const Icon = metric.icon;
             return (
               <Button
                 key={metric.id}
-                variant={selectedMetric === metric.id ? 'default' : 'outline'}
+                variant={selectedMetric === metric.id ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setSelectedMetric(metric.id)}
-                className="gap-1 text-xs"
+                className={`gap-2 text-sm transition-all duration-200 ${
+                  selectedMetric === metric.id 
+                    ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
               >
-                <Icon className="w-3 h-3" />
+                <Icon className="w-4 h-4" />
                 {metric.label}
               </Button>
             );
@@ -137,26 +171,76 @@ export const ClassAttendancePerformanceTable: React.FC<ClassAttendancePerformanc
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold text-gray-900 sticky left-0 bg-gray-50 z-10">Class Format</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Sessions</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Capacity</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Attendance</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Revenue</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">{metrics.find(m => m.id === selectedMetric)?.label}</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Empty Sessions</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Performance</TableHead>
+              <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200/60">
+                <TableHead className="font-bold text-slate-700 sticky left-0 bg-gradient-to-r from-slate-50 to-slate-100 z-10 border-r border-slate-200/60">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-blue-600" />
+                    Class Format
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className="w-4 h-4 text-green-600" />
+                    Sessions
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Users className="w-4 h-4 text-purple-600" />
+                    Capacity
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Activity className="w-4 h-4 text-orange-600" />
+                    Attendance
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <DollarSign className="w-4 h-4 text-emerald-600" />
+                    Revenue
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Target className="w-4 h-4 text-indigo-600" />
+                    {metrics.find(m => m.id === selectedMetric)?.label}
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="w-4 h-4 text-red-600" />
+                    Empty Sessions
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-teal-600" />
+                    Performance
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {performanceData.map((row, index) => (
-                <TableRow key={index} className="hover:bg-gray-50 transition-colors">
-                  <TableCell className="font-medium sticky left-0 bg-white z-10 border-r">
-                    <div className="flex flex-col">
-                      <span className="text-gray-900">{row.format}</span>
-                      <span className="text-xs text-gray-500">
-                        {formatPercentage(row.utilizationRate)} utilized
-                      </span>
+                <TableRow 
+                  key={index} 
+                  className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all duration-200 cursor-pointer group"
+                  onClick={() => handleDrillDown(row.format, row)}
+                >
+                  <TableCell className="font-medium sticky left-0 bg-white z-10 border-r border-slate-200/60 group-hover:bg-gradient-to-r group-hover:from-blue-50/50 group-hover:to-purple-50/50">
+                    <div className="flex items-center justify-between p-2">
+                      <div className="flex flex-col">
+                        <span className="text-slate-900 font-semibold text-base">{row.format}</span>
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <Activity className="w-3 h-3" />
+                          {formatPercentage(row.utilizationRate)} utilized
+                        </span>
+                      </div>
+                      <div className="p-1 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 group-hover:from-blue-200 group-hover:to-purple-200 transition-all">
+                        <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
@@ -210,6 +294,15 @@ export const ClassAttendancePerformanceTable: React.FC<ClassAttendancePerformanc
           </Table>
         </div>
       </CardContent>
+
+      {/* Drill-down Modal */}
+      <ClassAttendanceDrillDownModal
+        isOpen={drillDownModal.isOpen}
+        onClose={() => setDrillDownModal({ isOpen: false, classFormat: '', stats: null })}
+        classFormat={drillDownModal.classFormat}
+        sessionsData={data}
+        overallStats={drillDownModal.stats || {}}
+      />
     </Card>
   );
 };
