@@ -1,23 +1,17 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { ModernDataTable } from '@/components/ui/ModernDataTable';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { 
   ChevronDown, 
   ChevronUp, 
   Trophy, 
-  TrendingUp, 
-  TrendingDown, 
   Edit3, 
-  Save, 
-  X,
-  BarChart3,
-  Users,
-  Calendar,
-  Percent
+  Save,
+  BarChart3
 } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
 
@@ -26,20 +20,16 @@ interface ClassPerformanceData {
   className: string;
   sessionCount: number;
   totalCheckIns: number;
-  totalCapacity: number;
   avgCheckIns: number;
-  avgCheckInsWithEmpty: number;
   avgCheckInsWithoutEmpty: number;
   fillPercentage: number;
-  fillPercentageWithEmpty: number;
   fillPercentageWithoutEmpty: number;
   totalRevenue: number;
-  avgRevenue: number;
-  sessionsWithCheckIns: number;
-  emptySessions: number;
   rank: number;
   rankWithoutEmpty: number;
   individualSessions: SessionData[];
+  emptySessions: number;
+  sessionsWithCheckIns: number;
 }
 
 interface ClassPerformanceRankingTableProps {
@@ -117,13 +107,11 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
       const totalRevenue = sessions.reduce((sum, s) => sum + (s.revenue || s.totalPaid || 0), 0);
       
       const avgCheckIns = totalCheckIns / sessions.length;
-      const avgCheckInsWithEmpty = avgCheckIns;
       const avgCheckInsWithoutEmpty = sessionsWithCheckIns.length > 0 
         ? totalCheckIns / sessionsWithCheckIns.length 
         : 0;
       
       const fillPercentage = totalCapacity > 0 ? (totalCheckIns / totalCapacity) * 100 : 0;
-      const fillPercentageWithEmpty = fillPercentage;
       const fillPercentageWithoutEmpty = sessionsWithCheckIns.length > 0 && totalCapacity > 0
         ? (totalCheckIns / (sessionsWithCheckIns.reduce((sum, s) => sum + s.capacity, 0))) * 100
         : 0;
@@ -133,25 +121,21 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
         className: group.className,
         sessionCount: sessions.length,
         totalCheckIns,
-        totalCapacity,
         avgCheckIns,
-        avgCheckInsWithEmpty,
         avgCheckInsWithoutEmpty,
         fillPercentage,
-        fillPercentageWithEmpty,
         fillPercentageWithoutEmpty,
         totalRevenue,
-        avgRevenue: totalRevenue / sessions.length,
-        sessionsWithCheckIns: sessionsWithCheckIns.length,
-        emptySessions: emptySessions.length,
         rank: 0,
         rankWithoutEmpty: 0,
-        individualSessions: sessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        individualSessions: sessions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        emptySessions: emptySessions.length,
+        sessionsWithCheckIns: sessionsWithCheckIns.length
       };
     });
 
     // Rank by average check-ins (with empty)
-    const sortedWithEmpty = [...performanceData].sort((a, b) => b.avgCheckInsWithEmpty - a.avgCheckInsWithEmpty);
+    const sortedWithEmpty = [...performanceData].sort((a, b) => b.avgCheckIns - a.avgCheckIns);
     sortedWithEmpty.forEach((item, index) => {
       item.rank = index + 1;
     });
@@ -168,7 +152,7 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
     return performanceData;
   }, [data]);
 
-  const toggleRowExpansion = useCallback((uniqueId: string) => {
+  const toggleRowExpansion = (uniqueId: string) => {
     setExpandedRows(prev => {
       const newSet = new Set(prev);
       if (newSet.has(uniqueId)) {
@@ -178,215 +162,11 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
       }
       return newSet;
     });
-  }, []);
+  };
 
   const handleSaveSummary = (type: 'withEmpty' | 'withoutEmpty') => {
     setEditingSummary(prev => ({ ...prev, [type]: false }));
   };
-
-  const columns = [
-    {
-      key: 'rank',
-      header: 'Rank',
-      align: 'center' as const,
-      render: (value: number, row: ClassPerformanceData) => (
-        <div className="flex items-center justify-center">
-          {value <= 3 ? (
-            <Trophy className={`w-4 h-4 ${value === 1 ? 'text-yellow-500' : value === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
-          ) : null}
-          <span className="ml-1 font-bold">{value}</span>
-        </div>
-      )
-    },
-    {
-      key: 'className',
-      header: 'Class Name',
-      render: (value: string, row: ClassPerformanceData) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toggleRowExpansion(row.uniqueId)}
-            className="p-1 h-6 w-6"
-          >
-            {expandedRows.has(row.uniqueId) ? 
-              <ChevronUp className="w-3 h-3" /> : 
-              <ChevronDown className="w-3 h-3" />
-            }
-          </Button>
-          <span className="font-medium">{value}</span>
-        </div>
-      )
-    },
-    {
-      key: 'sessionCount',
-      header: 'Total Sessions',
-      align: 'center' as const,
-      render: (value: number) => <Badge variant="outline">{value}</Badge>
-    },
-    {
-      key: 'avgCheckIns',
-      header: 'Avg Check-ins',
-      align: 'center' as const,
-      render: (value: number) => <span className="font-semibold">{value.toFixed(1)}</span>
-    },
-    {
-      key: 'fillPercentage',
-      header: 'Fill %',
-      align: 'center' as const,
-      render: (value: number) => (
-        <Badge variant={value >= 80 ? 'default' : value >= 60 ? 'secondary' : 'destructive'}>
-          {value.toFixed(1)}%
-        </Badge>
-      )
-    },
-    {
-      key: 'sessionsWithCheckIns',
-      header: 'Active Sessions',
-      align: 'center' as const,
-      render: (value: number, row: ClassPerformanceData) => (
-        <div className="text-center">
-          <div className="font-semibold">{value}</div>
-          <div className="text-xs text-muted-foreground">
-            {row.emptySessions} empty
-          </div>
-        </div>
-      )
-    },
-    {
-      key: 'totalRevenue',
-      header: 'Total Revenue',
-      align: 'right' as const,
-      render: (value: number) => <span className="font-semibold">₹{value.toLocaleString()}</span>
-    },
-    {
-      key: 'avgRevenue',
-      header: 'Avg Revenue',
-      align: 'right' as const,
-      render: (value: number) => <span>₹{value.toFixed(0)}</span>
-    }
-  ];
-
-  const columnsWithoutEmpty = [
-    {
-      key: 'rankWithoutEmpty',
-      header: 'Rank',
-      align: 'center' as const,
-      render: (value: number, row: ClassPerformanceData) => (
-        <div className="flex items-center justify-center">
-          {value <= 3 ? (
-            <Trophy className={`w-4 h-4 ${value === 1 ? 'text-yellow-500' : value === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
-          ) : null}
-          <span className="ml-1 font-bold">{value}</span>
-        </div>
-      )
-    },
-    {
-      key: 'className',
-      header: 'Class Name',
-      render: (value: string, row: ClassPerformanceData) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => toggleRowExpansion(row.uniqueId)}
-            className="p-1 h-6 w-6"
-          >
-            {expandedRows.has(row.uniqueId) ? 
-              <ChevronUp className="w-3 h-3" /> : 
-              <ChevronDown className="w-3 h-3" />
-            }
-          </Button>
-          <span className="font-medium">{value}</span>
-        </div>
-      )
-    },
-    {
-      key: 'sessionsWithCheckIns',
-      header: 'Active Sessions',
-      align: 'center' as const,
-      render: (value: number) => <Badge variant="outline">{value}</Badge>
-    },
-    {
-      key: 'avgCheckInsWithoutEmpty',
-      header: 'Avg Check-ins (No Empty)',
-      align: 'center' as const,
-      render: (value: number) => <span className="font-semibold">{value.toFixed(1)}</span>
-    },
-    {
-      key: 'fillPercentageWithoutEmpty',
-      header: 'Fill % (No Empty)',
-      align: 'center' as const,
-      render: (value: number) => (
-        <Badge variant={value >= 80 ? 'default' : value >= 60 ? 'secondary' : 'destructive'}>
-          {value.toFixed(1)}%
-        </Badge>
-      )
-    },
-    {
-      key: 'totalRevenue',
-      header: 'Total Revenue',
-      align: 'right' as const,
-      render: (value: number) => <span className="font-semibold">₹{value.toLocaleString()}</span>
-    },
-    {
-      key: 'avgRevenue',
-      header: 'Avg Revenue',
-      align: 'right' as const,
-      render: (value: number) => <span>₹{value.toFixed(0)}</span>
-    }
-  ];
-
-  const drillDownColumns = [
-    {
-      key: 'date',
-      header: 'Date',
-      render: (value: string) => new Date(value).toLocaleDateString()
-    },
-    {
-      key: 'dayOfWeek',
-      header: 'Day',
-      align: 'center' as const
-    },
-    {
-      key: 'time',
-      header: 'Time',
-      align: 'center' as const
-    },
-    {
-      key: 'trainerName',
-      header: 'Trainer'
-    },
-    {
-      key: 'checkedInCount',
-      header: 'Check-ins',
-      align: 'center' as const,
-      render: (value: number) => <Badge variant="outline">{value}</Badge>
-    },
-    {
-      key: 'capacity',
-      header: 'Capacity',
-      align: 'center' as const
-    },
-    {
-      key: 'fillPercentage',
-      header: 'Fill %',
-      align: 'center' as const,
-      render: (value: number) => (
-        <Badge variant={value >= 80 ? 'default' : value >= 60 ? 'secondary' : 'destructive'}>
-          {value?.toFixed(1) || '0.0'}%
-        </Badge>
-      )
-    },
-    {
-      key: 'revenue',
-      header: 'Revenue',
-      align: 'right' as const,
-      render: (value: number, row: SessionData) => (
-        <span>₹{(value || row.totalPaid || 0).toLocaleString()}</span>
-      )
-    }
-  ];
 
   const SummarySection = ({ 
     title, 
@@ -482,39 +262,115 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <ModernDataTable
-              data={classPerformanceData.sort((a, b) => a.rank - b.rank)}
-              columns={columns}
-              maxHeight="600px"
-              stickyHeader
-              headerGradient="from-blue-600 to-purple-600"
-            />
-            
-            {/* Drill-down rows */}
-            {classPerformanceData.map(classData => (
-              expandedRows.has(classData.uniqueId) && (
-                <Collapsible key={`drill-${classData.uniqueId}`} open>
-                  <CollapsibleContent>
-                    <Card className="ml-8 mt-2">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">
-                          Individual Sessions - {classData.className}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ModernDataTable
-                          data={classData.individualSessions}
-                          columns={drillDownColumns}
-                          maxHeight="300px"
-                          headerGradient="from-slate-500 to-slate-600"
-                        />
-                      </CardContent>
-                    </Card>
-                  </CollapsibleContent>
-                </Collapsible>
-              )
-            ))}
+          <div className="overflow-auto border rounded-lg max-h-96">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:bg-blue-700">
+                  <TableHead className="text-white font-bold">Rank</TableHead>
+                  <TableHead className="text-white font-bold">Class Name</TableHead>
+                  <TableHead className="text-white font-bold">Sessions</TableHead>
+                  <TableHead className="text-white font-bold">Avg Check-ins</TableHead>
+                  <TableHead className="text-white font-bold">Fill %</TableHead>
+                  <TableHead className="text-white font-bold">Revenue</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {classPerformanceData.sort((a, b) => a.rank - b.rank).map((classData) => (
+                  <React.Fragment key={classData.uniqueId}>
+                    <TableRow className="hover:bg-gray-50">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {classData.rank <= 3 && (
+                            <Trophy className={`w-4 h-4 ${classData.rank === 1 ? 'text-yellow-500' : classData.rank === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
+                          )}
+                          <span className="font-bold">{classData.rank}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleRowExpansion(classData.uniqueId)}
+                            className="p-1 h-6 w-6"
+                          >
+                            {expandedRows.has(classData.uniqueId) ? 
+                              <ChevronUp className="w-3 h-3" /> : 
+                              <ChevronDown className="w-3 h-3" />
+                            }
+                          </Button>
+                          <span className="font-medium">{classData.className}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline">{classData.sessionCount}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center font-semibold">
+                        {classData.avgCheckIns.toFixed(1)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={classData.fillPercentage >= 80 ? 'default' : classData.fillPercentage >= 60 ? 'secondary' : 'destructive'}>
+                          {classData.fillPercentage.toFixed(1)}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        ₹{classData.totalRevenue.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                    
+                    {expandedRows.has(classData.uniqueId) && (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <Collapsible open>
+                            <CollapsibleContent>
+                              <Card className="ml-4 mt-2">
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="text-sm">
+                                    Individual Sessions - {classData.className}
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="overflow-auto max-h-64">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="bg-gray-100">
+                                          <TableHead>Date</TableHead>
+                                          <TableHead>Day</TableHead>
+                                          <TableHead>Time</TableHead>
+                                          <TableHead>Trainer</TableHead>
+                                          <TableHead>Check-ins</TableHead>
+                                          <TableHead>Capacity</TableHead>
+                                          <TableHead>Revenue</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {classData.individualSessions.map((session, idx) => (
+                                          <TableRow key={idx}>
+                                            <TableCell>{new Date(session.date).toLocaleDateString()}</TableCell>
+                                            <TableCell>{session.dayOfWeek}</TableCell>
+                                            <TableCell>{session.time}</TableCell>
+                                            <TableCell>{session.trainerName}</TableCell>
+                                            <TableCell>
+                                              <Badge variant="outline">{session.checkedInCount}</Badge>
+                                            </TableCell>
+                                            <TableCell>{session.capacity}</TableCell>
+                                            <TableCell>₹{(session.revenue || session.totalPaid || 0).toLocaleString()}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
           </div>
           
           <SummarySection
@@ -531,44 +387,70 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
+            <BarChart3 className="w-5 h-5" />
             Class Performance Rankings (Excluding Empty Sessions)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <ModernDataTable
-              data={classPerformanceData.sort((a, b) => a.rankWithoutEmpty - b.rankWithoutEmpty)}
-              columns={columnsWithoutEmpty}
-              maxHeight="600px"
-              stickyHeader
-              headerGradient="from-green-600 to-teal-600"
-            />
-            
-            {/* Drill-down rows */}
-            {classPerformanceData.map(classData => (
-              expandedRows.has(classData.uniqueId) && (
-                <Collapsible key={`drill-no-empty-${classData.uniqueId}`} open>
-                  <CollapsibleContent>
-                    <Card className="ml-8 mt-2">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">
-                          Individual Sessions - {classData.className}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ModernDataTable
-                          data={classData.individualSessions.filter(s => s.checkedInCount > 0)}
-                          columns={drillDownColumns}
-                          maxHeight="300px"
-                          headerGradient="from-slate-500 to-slate-600"
-                        />
-                      </CardContent>
-                    </Card>
-                  </CollapsibleContent>
-                </Collapsible>
-              )
-            ))}
+          <div className="overflow-auto border rounded-lg max-h-96">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gradient-to-r from-green-600 to-teal-600 text-white hover:bg-green-700">
+                  <TableHead className="text-white font-bold">Rank</TableHead>
+                  <TableHead className="text-white font-bold">Class Name</TableHead>
+                  <TableHead className="text-white font-bold">Active Sessions</TableHead>
+                  <TableHead className="text-white font-bold">Avg Check-ins</TableHead>
+                  <TableHead className="text-white font-bold">Fill %</TableHead>
+                  <TableHead className="text-white font-bold">Revenue</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {classPerformanceData.sort((a, b) => a.rankWithoutEmpty - b.rankWithoutEmpty).map((classData) => (
+                  <React.Fragment key={`no-empty-${classData.uniqueId}`}>
+                    <TableRow className="hover:bg-gray-50">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {classData.rankWithoutEmpty <= 3 && (
+                            <Trophy className={`w-4 h-4 ${classData.rankWithoutEmpty === 1 ? 'text-yellow-500' : classData.rankWithoutEmpty === 2 ? 'text-gray-400' : 'text-amber-600'}`} />
+                          )}
+                          <span className="font-bold">{classData.rankWithoutEmpty}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleRowExpansion(classData.uniqueId)}
+                            className="p-1 h-6 w-6"
+                          >
+                            {expandedRows.has(classData.uniqueId) ? 
+                              <ChevronUp className="w-3 h-3" /> : 
+                              <ChevronDown className="w-3 h-3" />
+                            }
+                          </Button>
+                          <span className="font-medium">{classData.className}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline">{classData.sessionsWithCheckIns}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center font-semibold">
+                        {classData.avgCheckInsWithoutEmpty.toFixed(1)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={classData.fillPercentageWithoutEmpty >= 80 ? 'default' : classData.fillPercentageWithoutEmpty >= 60 ? 'secondary' : 'destructive'}>
+                          {classData.fillPercentageWithoutEmpty.toFixed(1)}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        ₹{classData.totalRevenue.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
           </div>
           
           <SummarySection
