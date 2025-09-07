@@ -36,6 +36,7 @@ interface ClassPerformanceRankingTableProps {
   data: SessionData[];
 }
 
+// Local storage hook
 const useLocalStorage = (key: string, initialValue: string) => {
   const [storedValue, setStoredValue] = useState<string>(() => {
     try {
@@ -59,9 +60,7 @@ const useLocalStorage = (key: string, initialValue: string) => {
   return [storedValue, setValue] as const;
 };
 
-export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTableProps> = ({
-  data
-}) => {
+export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTableProps> = ({ data }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [editingSummary, setEditingSummary] = useState<{ withEmpty: boolean; withoutEmpty: boolean }>({
     withEmpty: false,
@@ -70,12 +69,12 @@ export const ClassPerformanceRankingTable: React.FC<ClassPerformanceRankingTable
   
   const [summaryWithEmpty, setSummaryWithEmpty] = useLocalStorage(
     'class-performance-summary-with-empty',
-    '• Classes are ranked by average check-ins including empty sessions\n• Higher fill percentages indicate better class popularity\n• Revenue metrics show financial performance per class'
+    '• Classes are ranked by average check-ins including empty sessions\\n• Higher fill percentages indicate better class popularity\\n• Revenue metrics show financial performance per class'
   );
   
   const [summaryWithoutEmpty, setSummaryWithoutEmpty] = useLocalStorage(
     'class-performance-summary-without-empty',
-    '• Classes are ranked by average check-ins excluding empty sessions\n• This view shows true performance when classes actually run\n• Better indicator of class engagement when sessions occur'
+    '• Classes are ranked by average check-ins excluding empty sessions\\n• This view shows true performance when classes actually run\\n• Better indicator of class engagement when sessions occur'
   );
 
   // Process and group data by unique ID
