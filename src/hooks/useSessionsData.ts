@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { parseDate } from '@/utils/dateUtils';
 
 export interface SessionData {
   trainerId: string;
@@ -107,6 +108,11 @@ export const useSessionsData = () => {
         const checkedInCount = parseNumericValue(row[7]);
         const fillPercentage = capacity > 0 ? (checkedInCount / capacity) * 100 : 0;
         
+        // Parse and validate the date
+        const rawDate = row[12] || '';
+        const parsedDate = parseDate(rawDate);
+        const validDate = parsedDate ? parsedDate.toISOString().split('T')[0] : rawDate; // Fallback to original if parsing fails
+        
         return {
           trainerId: row[0] || '',
           trainerFirstName: row[1] || '',
@@ -120,7 +126,7 @@ export const useSessionsData = () => {
           bookedCount: parseNumericValue(row[9]),
           complimentaryCount: parseNumericValue(row[10]),
           location: row[11] || '',
-          date: row[12] || '',
+          date: validDate,
           dayOfWeek: row[13] || '',
           time: row[14] || '',
           totalPaid: parseNumericValue(row[15]),

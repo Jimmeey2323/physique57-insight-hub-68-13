@@ -11,6 +11,7 @@ import {
   TrendingUp, TrendingDown, Minus, ArrowUpDown, Filter
 } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
+import { parseSafeSessionDate } from '@/utils/dateUtils';
 
 interface ComprehensiveHostedClassesTableProps {
   data: SessionData[];
@@ -70,7 +71,7 @@ export const ComprehensiveHostedClassesTable: React.FC<ComprehensiveHostedClasse
           id: (session as any).id || Math.random().toString(),
           className: session.cleanedClass || session.classType || 'Unknown',
           sessionName: session.sessionName || 'Unknown Session',
-          date: session.date ? new Date(session.date).toLocaleDateString() : 'Unknown',
+          date: session.date ? (parseSafeSessionDate(session.date)?.toLocaleDateString() || session.date) : 'Unknown',
           time: session.time || 'Unknown',
           location: session.location || 'Unknown',
           trainer: session.trainerName || 'Unknown',

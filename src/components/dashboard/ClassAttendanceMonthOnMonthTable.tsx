@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, TrendingUp, TrendingDown, Minus, Target, Users, DollarSign, Activity } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
 import { formatNumber, formatCurrency, formatPercentage } from '@/utils/formatters';
+import { parseSafeSessionDate } from '@/utils/dateUtils';
 
 interface ClassAttendanceMonthOnMonthTableProps {
   data: SessionData[];
@@ -19,7 +20,9 @@ export const ClassAttendanceMonthOnMonthTable: React.FC<ClassAttendanceMonthOnMo
 
     // Group data by month
     const monthlyStats = data.reduce((acc, session) => {
-      const date = new Date(session.date);
+      const date = parseSafeSessionDate(session.date);
+      if (!date) return acc; // Skip invalid dates
+      
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!acc[monthKey]) {

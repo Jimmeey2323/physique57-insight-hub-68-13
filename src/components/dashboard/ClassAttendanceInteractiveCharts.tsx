@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { BarChart3, TrendingUp, PieChart as PieChartIcon, Activity, Calendar, Target, Users, DollarSign } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
 import { formatCurrency, formatNumber, formatPercentage } from '@/utils/formatters';
+import { parseSafeSessionDate } from '@/utils/dateUtils';
 
 interface ClassAttendanceInteractiveChartsProps {
   data: SessionData[];
@@ -99,7 +100,9 @@ export const ClassAttendanceInteractiveCharts: React.FC<ClassAttendanceInteracti
 
     // Monthly trends
     const monthlyStats = data.reduce((acc, session) => {
-      const date = new Date(session.date);
+      const date = parseSafeSessionDate(session.date);
+      if (!date) return acc; // Skip invalid dates
+      
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!acc[monthKey]) {

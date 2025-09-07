@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { BarChart3, TrendingUp, Target, Users, Calendar, DollarSign, Activity, Zap } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
 import { formatNumber, formatCurrency, formatPercentage } from '@/utils/formatters';
+import { ModernDrillDownModal } from './ModernDrillDownModal';
 
 interface ClassAttendancePerformanceTableProps {
   data: SessionData[];
@@ -13,6 +14,8 @@ interface ClassAttendancePerformanceTableProps {
 
 export const ClassAttendancePerformanceTable: React.FC<ClassAttendancePerformanceTableProps> = ({ data }) => {
   const [selectedMetric, setSelectedMetric] = useState('fillRate');
+  const [drillDownData, setDrillDownData] = useState(null);
+  const [showDrillDown, setShowDrillDown] = useState(false);
 
   const performanceData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -100,6 +103,31 @@ export const ClassAttendancePerformanceTable: React.FC<ClassAttendancePerformanc
     }
   };
 
+  const handleRowClick = (row: any) => {
+    // Filter data for the specific class format
+    const formatData = data.filter(session => 
+      (session.cleanedClass || session.classType) === row.format
+    );
+    
+    const drillDownInfo = {
+      name: row.format,
+      type: 'Class Format',
+      totalSessions: row.totalSessions,
+      totalRevenue: row.totalRevenue,
+      totalCheckedIn: row.totalCheckedIn,
+      totalCapacity: row.totalCapacity,
+      fillRate: row.fillRate,
+      showUpRate: row.showUpRate,
+      utilizationRate: row.utilizationRate,
+      avgRevenue: row.avgRevenue,
+      emptySessions: row.emptySessions,
+      rawData: formatData
+    };
+    
+    setDrillDownData(drillDownInfo);
+    setShowDrillDown(true);
+  };
+
   return (
     <Card className="bg-white shadow-lg border-0">
       <CardHeader className="border-b border-gray-100">
@@ -150,7 +178,11 @@ export const ClassAttendancePerformanceTable: React.FC<ClassAttendancePerformanc
             </TableHeader>
             <TableBody>
               {performanceData.map((row, index) => (
-                <TableRow key={index} className="hover:bg-gray-50 transition-colors">
+                <TableRow 
+                  key={index} 
+                  className="hover:bg-gray-50 transition-colors cursor-pointer" 
+                  onClick={() => handleRowClick(row)}
+                >
                   <TableCell className="font-medium sticky left-0 bg-white z-10 border-r">
                     <div className="flex flex-col">
                       <span className="text-gray-900">{row.format}</span>
@@ -210,6 +242,13 @@ export const ClassAttendancePerformanceTable: React.FC<ClassAttendancePerformanc
           </Table>
         </div>
       </CardContent>
+      
+      <ModernDrillDownModal
+        isOpen={showDrillDown}
+        onClose={() => setShowDrillDown(false)}
+        data={drillDownData}
+        type="class"
+      />
     </Card>
   );
 };

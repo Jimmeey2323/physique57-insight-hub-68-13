@@ -111,6 +111,18 @@ export const parseDate = (dateString: string): Date | null => {
   }
 };
 
+// Safe date parsing for session data - returns a valid Date object or null
+export const parseSafeSessionDate = (dateString: string): Date | null => {
+  const parsed = parseDate(dateString);
+  return parsed && !isNaN(parsed.getTime()) ? parsed : null;
+};
+
+// Helper to convert session date to a standard format for comparisons
+export const standardizeSessionDate = (dateString: string): string => {
+  const parsed = parseSafeSessionDate(dateString);
+  return parsed ? parsed.toISOString().split('T')[0] : dateString;
+};
+
 // New function to get previous month as period string for filters that use period instead of date range
 export const getPreviousMonthPeriod = () => {
   const now = new Date();

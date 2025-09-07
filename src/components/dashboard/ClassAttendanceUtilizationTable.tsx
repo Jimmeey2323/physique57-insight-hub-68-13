@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Activity, Clock, Users, Target, Zap, AlertTriangle, CheckCircle, XCircle, Calendar } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
 import { formatNumber, formatPercentage } from '@/utils/formatters';
+import { ModernDrillDownModal } from './ModernDrillDownModal';
 
 interface ClassAttendanceUtilizationTableProps {
   data: SessionData[];
@@ -13,6 +14,58 @@ interface ClassAttendanceUtilizationTableProps {
 
 export const ClassAttendanceUtilizationTable: React.FC<ClassAttendanceUtilizationTableProps> = ({ data }) => {
   const [selectedView, setSelectedView] = useState('timeSlot');
+  const [drillDownData, setDrillDownData] = useState(null);
+  const [showDrillDown, setShowDrillDown] = useState(false);
+
+  const handleRowClick = (row: any, viewType: string) => {
+    // Filter data based on the view type and selected row
+    let filteredData = data;
+    let drillDownInfo: any = {};
+
+    if (viewType === 'timeSlot') {
+      filteredData = data.filter(session => session.time === row.timeSlot);
+      drillDownInfo = {
+        name: row.timeSlot,
+        type: 'Time Slot',
+        totalSessions: row.totalSessions,
+        totalAttendance: row.totalAttendance,
+        totalCapacity: row.totalCapacity,
+        utilizationRate: row.utilizationRate,
+        efficiency: row.efficiency,
+        emptySessions: row.emptySessions,
+        rawData: filteredData
+      };
+    } else if (viewType === 'dayOfWeek') {
+      filteredData = data.filter(session => session.dayOfWeek === row.day);
+      drillDownInfo = {
+        name: row.day,
+        type: 'Day of Week',
+        totalSessions: row.totalSessions,
+        totalAttendance: row.totalAttendance,
+        totalCapacity: row.totalCapacity,
+        utilizationRate: row.utilizationRate,
+        efficiency: row.efficiency,
+        emptySessions: row.emptySessions,
+        rawData: filteredData
+      };
+    } else if (viewType === 'trainer') {
+      filteredData = data.filter(session => session.trainerName === row.trainer);
+      drillDownInfo = {
+        name: row.trainer,
+        type: 'Trainer',
+        totalSessions: row.totalSessions,
+        totalAttendance: row.totalAttendance,
+        totalCapacity: row.totalCapacity,
+        utilizationRate: row.utilizationRate,
+        efficiency: row.efficiency,
+        emptySessions: row.emptySessions,
+        rawData: filteredData
+      };
+    }
+
+    setDrillDownData(drillDownInfo);
+    setShowDrillDown(true);
+  };
 
   const utilizationData = useMemo(() => {
     if (!data || data.length === 0) return { timeSlot: [], dayOfWeek: [], trainer: [] };
@@ -216,7 +269,11 @@ export const ClassAttendanceUtilizationTable: React.FC<ClassAttendanceUtilizatio
                 const StatusIcon = utilizationBadge.icon;
                 
                 return (
-                  <TableRow key={index} className="hover:bg-gray-50 transition-colors">
+                  <TableRow 
+                    key={index} 
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => handleRowClick(row, selectedView)}
+                  >
                     <TableCell className="font-medium sticky left-0 bg-white z-10 border-r">
                       <div className="flex flex-col">
                         <span className="text-gray-900">{row[currentKey]}</span>
@@ -291,6 +348,13 @@ export const ClassAttendanceUtilizationTable: React.FC<ClassAttendanceUtilizatio
           </Table>
         </div>
       </CardContent>
+      
+      <ModernDrillDownModal
+        isOpen={showDrillDown}
+        onClose={() => setShowDrillDown(false)}
+        data={drillDownData}
+        type="metric"
+      />
     </Card>
   );
 };
