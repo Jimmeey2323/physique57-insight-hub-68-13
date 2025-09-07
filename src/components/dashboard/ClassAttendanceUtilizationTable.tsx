@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Activity, Clock, Users, Target, Zap, AlertTriangle, CheckCircle, XCircle, Calendar } from 'lucide-react';
+import { Activity, Clock, Users, Target, Zap, AlertTriangle, CheckCircle, XCircle, Calendar, MapPin, ChevronRight } from 'lucide-react';
 import { SessionData } from '@/hooks/useSessionsData';
 import { formatNumber, formatPercentage } from '@/utils/formatters';
 
@@ -161,31 +161,42 @@ export const ClassAttendanceUtilizationTable: React.FC<ClassAttendanceUtilizatio
   const currentKey = views.find(v => v.id === selectedView)?.key || 'timeSlot';
 
   return (
-    <Card className="bg-white shadow-lg border-0">
-      <CardHeader className="border-b border-gray-100">
+    <Card className="bg-white shadow-xl border-0 rounded-2xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white border-b-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="w-6 h-6 text-indigo-600" />
-            Utilization Analysis
-            <Badge variant="outline" className="text-indigo-600">
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+              <Activity className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="font-bold">Utilization Analysis</div>
+              <div className="text-sm text-white/80 font-normal">
+                Performance breakdown by time slots, trainers, and schedules
+              </div>
+            </div>
+            <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm border-white/30">
               {currentData.length} items
             </Badge>
           </CardTitle>
         </div>
         
         {/* View Selector */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex flex-wrap gap-2 mt-6">
           {views.map((view) => {
             const Icon = view.icon;
             return (
               <Button
                 key={view.id}
-                variant={selectedView === view.id ? 'default' : 'outline'}
+                variant={selectedView === view.id ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setSelectedView(view.id)}
-                className="gap-1 text-xs"
+                className={`gap-2 text-sm transition-all duration-200 ${
+                  selectedView === view.id 
+                    ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
               >
-                <Icon className="w-3 h-3" />
+                <Icon className="w-4 h-4" />
                 {view.label}
               </Button>
             );
@@ -197,17 +208,55 @@ export const ClassAttendanceUtilizationTable: React.FC<ClassAttendanceUtilizatio
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="font-semibold text-gray-900 sticky left-0 bg-gray-50 z-10">
-                  {views.find(v => v.id === selectedView)?.label.replace('By ', '')}
+              <TableRow className="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200/60">
+                <TableHead className="font-bold text-slate-700 sticky left-0 bg-gradient-to-r from-slate-50 to-slate-100 z-10 border-r border-slate-200/60">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-indigo-600" />
+                    {views.find(v => v.id === selectedView)?.label.replace('By ', '')}
+                  </div>
                 </TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Sessions</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Avg Attendance</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Fill Rate</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Utilization</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Performance</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Session Types</TableHead>
-                <TableHead className="text-center font-semibold text-gray-900">Status</TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Sessions
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Users className="w-4 h-4 text-green-600" />
+                    Avg Attendance
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Target className="w-4 h-4 text-purple-600" />
+                    Fill Rate
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="w-4 h-4 text-orange-600" />
+                    Utilization
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    Performance
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <Zap className="w-4 h-4 text-pink-600" />
+                    Session Types
+                  </div>
+                </TableHead>
+                <TableHead className="text-center font-bold text-slate-700">
+                  <div className="flex items-center justify-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600" />
+                    Status
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
